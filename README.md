@@ -13,9 +13,14 @@ The bot uses the command prefix >spot, and the currently available commands are 
 
 \>spot sample will return a sampling of five tracks from a specified artist:
 
+![sample](./img/sample.png)
+
 \>spot follow will follow a specified artist, checking every 8 hours for new releases and pinging you with a message once there is one:
 
-\>spot unfollow will unfollow an artist you've followed:
+![follow](./img/follow.png)
+
+\>spot unfollow will unfollow an artist you've followed.
 
 \>spot info will return the information about an artist that has at least 1 follower, to include latest release info and which users are following them:
 
+![info](./img/info.png)
