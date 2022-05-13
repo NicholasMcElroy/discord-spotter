@@ -1,0 +1,4 @@
+tekore
+python-dotenv
+discord
+
