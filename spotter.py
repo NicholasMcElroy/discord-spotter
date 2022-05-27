@@ -26,6 +26,12 @@ description = "New track notification bot."
 bot = commands.Bot(command_prefix='>spot ', description=description, activity=Game(name='>spot help'))
 spotify = tk.Spotify(token_spotify, asynchronous=True)
 
+async def search(query, qtype="tracks", years=[2019,2022], limit=20):
+    if years is not None:
+        results, = await spotify.search(f'artist:{query} year:{years[0]}-{years[1]}', types=(qtype,), limit=limit)
+     else:
+        results, = await spotify.search(f'artist:{query}', types=(qtype,), limit=limit)
+    return results,
 
 @bot.command()
 async def sample(ctx, *, query: str = None):
@@ -33,7 +39,7 @@ async def sample(ctx, *, query: str = None):
         await ctx.send("No search query specified.")
         return
 
-    tracks, = await spotify.search(f'{query}', limit=5)
+    tracks, = search(query, limit=5)
 
     embed = Embed(title="Track search results", color=0x1DB954)
     embed.set_thumbnail(url="https://i.imgur.com/890YSn2.png")
@@ -66,7 +72,7 @@ async def follow(ctx, *, artist: str = None):
     if artist is None:
         await ctx.send("No artist name provided.")
         return
-    artists, = await spotify.search(artist, types=('artist',), limit=1)
+    artists, = search(artist, qtype='artist', limit=1, artist=False)
     artist = artists.items[0]
     await ctx.send(f"Get notifications for {artist.name}? (y/n)")
     msg = await bot.wait_for('message', check=check, timeout=30)
@@ -87,15 +93,15 @@ async def follow(ctx, *, artist: str = None):
                 json.dump(data, out, indent="")
         else:
             tracks = []
-            latest_releases, = await spotify.search(f'artist:{artist.name} year:2019-2022', types=('track',), limit=20)
+            latest_releases, = search(artist.name)
             if len(latest_releases.items) == 0:
-                latest_releases, = await spotify.search(f'artist:{artist.name} year:2012-2022', types=('track',), limit=20)
+                latest_releases, = search(artist.name, years=[2012,2022])
             if len(latest_releases.items) == 0:
                 await ctx.send(f"{artist.name} has not released any new music in the last decade."
                                f"\nAre you sure you want to follow?")
                 msg = await bot.wait_for('message', check=check, timeout=30)
                 if msg.content.lower() == "y":
-                    latest_releases, = await spotify.search(f'artist:{artist.name}', types=('track',), limit=50)
+                    latest_releases, = search(artist.name, years=None)
                 else:
                     await ctx.send("Sorry bud. Exiting.")
                     return
@@ -141,7 +147,7 @@ async def unfollow(ctx, *, query: str = None):
     if query is None:
         await ctx.send("No artist name provided.")
         return
-    artists, = await spotify.search(query, types=('artist',), limit=1)
+    artists, = search(query, qtype="artist", limit=1)
     artist = artists.items[0]
     if artist.name not in data.keys():
         await ctx.send(f"The artist {artist.name} currently has no followers.")
@@ -179,7 +185,7 @@ async def info(ctx, *, query: str = None):
     if query is None:
         await ctx.send("No artist name provided.")
         return
-    artists, = await spotify.search(query, types=('artist',), limit=1)
+    artists, = search(query, qtype='artist', limit=1)
     artist = artists.items[0]
     if artist.name not in data.keys():
         await ctx.send(f"The artist {artist.name} currently has no followers.")
@@ -204,7 +210,7 @@ async def update():
     for artist in data:
         print(f"Checking {artist} releases...")
         tracks = []
-        latest_releases, = await spotify.search(f'artist:{artist} year:2019-2022', types=('track',), limit=20)
+        latest_releases, = search(artist)
         if len(latest_releases.items) == 0:
             continue
         for t in latest_releases.items:
@@ -239,7 +245,8 @@ async def update():
 
 @bot.event
 async def on_ready():
-    update.start()
+    if not update.is_running():
+        update.start()
     print(f"Bot up at {time.ctime()}.")
 
 if __name__ == "__main__":
